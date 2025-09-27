@@ -7,8 +7,6 @@ import rateLimit from "express-rate-limit";
 import config from "./config/env";
 import { connectDB } from "./config/database";
 import { swaggerSpec, swaggerUi } from "./config/swagger";
-import tweetRoutes from "./routes/tweetRoutes";
-import web3Routes from "./routes/web3Routes";
 import companyRoutes from "./routes/companyRoutes";
 import cronService from "./services/cronService";
 import { errorHandler } from "./middleware/errorHandler";
@@ -42,8 +40,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
-app.use("/api/tweets", tweetRoutes);
-app.use("/api/web3", web3Routes);
 app.use("/api/companies", companyRoutes);
 
 // Health check endpoint
@@ -81,8 +77,6 @@ const startServer = async () => {
       console.log(`🚀 Server is running on port ${PORT}`);
       console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
       console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
-      console.log(`🐦 Tweet API: http://localhost:${PORT}/api/tweets`);
-      console.log(`🌐 Web3 API: http://localhost:${PORT}/api/web3`);
       console.log(`🏢 Company API: http://localhost:${PORT}/api/companies`);
     });
   } catch (error) {

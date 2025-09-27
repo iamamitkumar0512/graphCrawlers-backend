@@ -1,7 +1,6 @@
 import puppeteer, { Browser, Page } from "puppeteer";
 import axios from "axios";
 import * as cheerio from "cheerio";
-import Web3Post, { IWeb3Post } from "../models/Web3Post";
 import Company, { ICompany } from "../models/Company";
 import Paragraph, { IParagraph } from "../models/Paragraph";
 import { logger } from "../utils/logger";
@@ -17,7 +16,7 @@ export interface Web3Company {
   pyarzgraph?: string;
 }
 
-export interface ScrapedWeb3Post {
+export interface ScrapedPost {
   postId: string;
   title: string;
   content: string;
@@ -82,364 +81,55 @@ class Web3ScraperService {
     }
   }
 
-  async fetchMediumPosts(
-    company: Web3Company,
-    maxPosts: number = 10
-  ): Promise<ScrapedWeb3Post[]> {
-    if (!company.medium) return [];
-
-    try {
-      const mediumUrl = `https://medium.com/@${company.medium}`;
-      const response = await axios.get(mediumUrl, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-      });
-
-      const $ = cheerio.load(response.data);
-      const posts: ScrapedWeb3Post[] = [];
-
-      // Medium uses dynamic content loading, so we'll use a different approach
-      // For now, we'll implement a basic scraper that works with static content
-      $("article")
-        .slice(0, maxPosts)
-        .each((index, element) => {
-          try {
-            const $article = $(element);
-            const title = $article.find("h1, h2, h3").first().text().trim();
-            const link = $article.find("a").first().attr("href");
-            const author =
-              $article.find('[data-testid="authorName"]').text().trim() ||
-              company.name;
-
-            if (title && link) {
-              const fullUrl = link.startsWith("http")
-                ? link
-                : `https://medium.com${link}`;
-              const cleanedUrl = cleanUrl(fullUrl);
-              const postId = this.generatePostId(cleanedUrl);
-
-              posts.push({
-                postId,
-                title,
-                content: $article.find("p").text().trim(),
-                excerpt: $article
-                  .find("p")
-                  .first()
-                  .text()
-                  .trim()
-                  .substring(0, 300),
-                author: {
-                  name: author,
-                  username: company.medium,
-                  profileUrl: `https://medium.com/@${company.medium}`,
-                },
-                platform: "medium",
-                url: cleanedUrl,
-                publishedAt: new Date(),
-                tags: this.extractTags($article.text()),
-                metrics: {
-                  claps: this.extractNumber(
-                    $article.find('[data-testid="clapCount"]').text()
-                  ),
-                  views: 0,
-                  comments: 0,
-                  shares: 0,
-                },
-                company,
-                featuredImage: $article.find("img").first().attr("src"),
-                readingTime: this.estimateReadingTime(
-                  $article.find("p").text()
-                ),
-              });
-            }
-          } catch (error) {
-            logger.error(
-              `Error parsing Medium post for ${company.name}:`,
-              error
-            );
-          }
-        });
-
-      logger.info(`Fetched ${posts.length} Medium posts for ${company.name}`);
-      return posts;
-    } catch (error) {
-      logger.error(`Error fetching Medium posts for ${company.name}:`, error);
-      return [];
-    }
-  }
-
-  async fetchMirrorPosts(
-    company: Web3Company,
-    maxPosts: number = 10
-  ): Promise<ScrapedWeb3Post[]> {
-    if (!company.mirror) return [];
-
-    try {
-      const mirrorUrl = `https://mirror.xyz/${company.mirror}`;
-      const response = await axios.get(mirrorUrl, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-      });
-
-      const $ = cheerio.load(response.data);
-      const posts: ScrapedWeb3Post[] = [];
-
-      $('[data-testid="post-card"], .post-card, article')
-        .slice(0, maxPosts)
-        .each((index, element) => {
-          try {
-            const $post = $(element);
-            const title = $post
-              .find('h1, h2, h3, [data-testid="post-title"]')
-              .first()
-              .text()
-              .trim();
-            const link = $post.find("a").first().attr("href");
-            const author =
-              $post
-                .find('[data-testid="author-name"], .author-name')
-                .text()
-                .trim() || company.name;
-
-            if (title && link) {
-              const fullUrl = link.startsWith("http")
-                ? link
-                : `https://mirror.xyz${link}`;
-              const cleanedUrl = cleanUrl(fullUrl);
-              const postId = this.generatePostId(cleanedUrl);
-
-              posts.push({
-                postId,
-                title,
-                content: $post.find("p").text().trim(),
-                excerpt: $post
-                  .find("p")
-                  .first()
-                  .text()
-                  .trim()
-                  .substring(0, 300),
-                author: {
-                  name: author,
-                  username: company.mirror,
-                  profileUrl: `https://mirror.xyz/${company.mirror}`,
-                },
-                platform: "mirror",
-                url: cleanedUrl,
-                publishedAt: new Date(),
-                tags: this.extractTags($post.text()),
-                metrics: {
-                  claps: 0,
-                  views: 0,
-                  comments: 0,
-                  shares: 0,
-                },
-                company,
-                featuredImage: $post.find("img").first().attr("src"),
-                readingTime: this.estimateReadingTime($post.find("p").text()),
-              });
-            }
-          } catch (error) {
-            logger.error(
-              `Error parsing Mirror post for ${company.name}:`,
-              error
-            );
-          }
-        });
-
-      logger.info(`Fetched ${posts.length} Mirror posts for ${company.name}`);
-      return posts;
-    } catch (error) {
-      logger.error(`Error fetching Mirror posts for ${company.name}:`, error);
-      return [];
-    }
-  }
-
-  async fetchPyarzgraphPosts(
-    company: Web3Company,
-    maxPosts: number = 10
-  ): Promise<ScrapedWeb3Post[]> {
-    if (!company.pyarzgraph) return [];
-
-    try {
-      const pyarzgraphUrl = `https://pyarzgraph.xyz/${company.pyarzgraph}`;
-      const response = await axios.get(pyarzgraphUrl, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-      });
-
-      const $ = cheerio.load(response.data);
-      const posts: ScrapedWeb3Post[] = [];
-
-      $('article, .post, [data-testid="post"]')
-        .slice(0, maxPosts)
-        .each((index, element) => {
-          try {
-            const $post = $(element);
-            const title = $post.find("h1, h2, h3").first().text().trim();
-            const link = $post.find("a").first().attr("href");
-            const author =
-              $post.find('.author, [data-testid="author"]').text().trim() ||
-              company.name;
-
-            if (title && link) {
-              const fullUrl = link.startsWith("http")
-                ? link
-                : `https://pyarzgraph.xyz${link}`;
-              const cleanedUrl = cleanUrl(fullUrl);
-              const postId = this.generatePostId(cleanedUrl);
-
-              posts.push({
-                postId,
-                title,
-                content: $post.find("p").text().trim(),
-                excerpt: $post
-                  .find("p")
-                  .first()
-                  .text()
-                  .trim()
-                  .substring(0, 300),
-                author: {
-                  name: author,
-                  username: company.pyarzgraph,
-                  profileUrl: `https://pyarzgraph.xyz/${company.pyarzgraph}`,
-                },
-                platform: "pyarzgraph",
-                url: cleanedUrl,
-                publishedAt: new Date(),
-                tags: this.extractTags($post.text()),
-                metrics: {
-                  claps: 0,
-                  views: 0,
-                  comments: 0,
-                  shares: 0,
-                },
-                company,
-                featuredImage: $post.find("img").first().attr("src"),
-                readingTime: this.estimateReadingTime($post.find("p").text()),
-              });
-            }
-          } catch (error) {
-            logger.error(
-              `Error parsing Pyarzgraph post for ${company.name}:`,
-              error
-            );
-          }
-        });
-
-      logger.info(
-        `Fetched ${posts.length} Pyarzgraph posts for ${company.name}`
-      );
-      return posts;
-    } catch (error) {
-      logger.error(
-        `Error fetching Pyarzgraph posts for ${company.name}:`,
-        error
-      );
-      return [];
-    }
-  }
-
-  async fetchAllCompanyPosts(
-    company: Web3Company,
-    maxPostsPerPlatform: number = 5
-  ): Promise<ScrapedWeb3Post[]> {
-    const allPosts: ScrapedWeb3Post[] = [];
-
-    try {
-      // Fetch from all available platforms
-      const [mediumPosts, mirrorPosts, pyarzgraphPosts] = await Promise.all([
-        this.fetchMediumPosts(company, maxPostsPerPlatform),
-        this.fetchMirrorPosts(company, maxPostsPerPlatform),
-        this.fetchPyarzgraphPosts(company, maxPostsPerPlatform),
-      ]);
-
-      allPosts.push(...mediumPosts, ...mirrorPosts, ...pyarzgraphPosts);
-
-      logger.info(`Fetched ${allPosts.length} total posts for ${company.name}`);
-      return allPosts;
-    } catch (error) {
-      logger.error(`Error fetching posts for ${company.name}:`, error);
-      return [];
-    }
-  }
-
-  async savePostsToDatabase(posts: ScrapedWeb3Post[]): Promise<IWeb3Post[]> {
-    const savedPosts: IWeb3Post[] = [];
-
-    for (const post of posts) {
-      try {
-        // Check if post already exists by postId or URL
-        const existingPost = await Web3Post.findOne({
-          $or: [{ postId: post.postId }, { url: post.url }],
-        });
-        if (existingPost) {
-          logger.info(
-            `Post ${post.postId} already exists (by postId or URL), skipping`
-          );
-          continue;
-        }
-
-        // Create new post
-        const newPost = new Web3Post({
-          ...post,
-          fetchedAt: new Date(),
-        });
-
-        const savedPost = await newPost.save();
-        savedPosts.push(savedPost);
-        logger.info(`Saved post ${post.postId} to database`);
-      } catch (error) {
-        logger.error(`Error saving post ${post.postId}:`, error);
-      }
-    }
-
-    return savedPosts;
-  }
-
-  async fetchAndSaveAllPosts(
+  async fetchAndSaveAllParagraphs(
     maxPostsPerCompany: number = 5
-  ): Promise<IWeb3Post[]> {
-    const allSavedPosts: IWeb3Post[] = [];
+  ): Promise<IParagraph[]> {
+    const allSavedParagraphs: IParagraph[] = [];
 
     // Get all active companies from database
     const companies = await Company.find({ isActive: true }).lean();
 
     for (const company of companies) {
       try {
-        logger.info(`Fetching posts for ${company.companyName}`);
+        logger.info(`Fetching paragraphs for ${company.companyName}`);
 
-        // Convert database company to Web3Company format for existing methods
-        const web3Company: Web3Company = {
-          name: company.companyName,
-          slug: company.companyName.toLowerCase().replace(/\s+/g, "-"),
-          website: company.publicSpaceId,
-          medium: company.mediumLink,
-          mirror: company.mirrorLink,
-          pyarzgraph: company.paragraphLink,
-        };
+        // Fetch from all available platforms and save as paragraphs
+        const platforms = [
+          { platform: "medium" as const, link: company.mediumLink },
+          { platform: "paragraph" as const, link: company.paragraphLink },
+          { platform: "mirror" as const, link: company.mirrorLink },
+        ];
 
-        const posts = await this.fetchAllCompanyPosts(
-          web3Company,
-          maxPostsPerCompany
-        );
-        const savedPosts = await this.savePostsToDatabase(posts);
-        allSavedPosts.push(...savedPosts);
+        for (const { platform, link } of platforms) {
+          if (link) {
+            try {
+              const paragraphs = await this.scrapeCompanyByPlatform(
+                company.companyName,
+                platform,
+                maxPostsPerCompany
+              );
+              allSavedParagraphs.push(...paragraphs);
+            } catch (error) {
+              logger.error(
+                `Error fetching ${platform} posts for ${company.companyName}:`,
+                error
+              );
+            }
+          }
+        }
 
         // Add delay between companies to avoid rate limiting
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
-        logger.error(`Error fetching posts for ${company.companyName}:`, error);
+        logger.error(
+          `Error fetching paragraphs for ${company.companyName}:`,
+          error
+        );
         // Continue with other companies even if one fails
       }
     }
 
-    return allSavedPosts;
+    return allSavedParagraphs;
   }
 
   // Helper methods
@@ -546,7 +236,7 @@ class Web3ScraperService {
       }
 
       // Scrape posts based on platform
-      let scrapedPosts: ScrapedWeb3Post[] = [];
+      let scrapedPosts: ScrapedPost[] = [];
       switch (platform) {
         case "medium":
           scrapedPosts = await this.fetchMediumPostsFromLink(link, maxPosts);
@@ -630,7 +320,7 @@ class Web3ScraperService {
   private async fetchMediumPostsFromLink(
     link: string,
     maxPosts: number = 10
-  ): Promise<ScrapedWeb3Post[]> {
+  ): Promise<ScrapedPost[]> {
     try {
       const response = await axios.get(link, {
         headers: {
@@ -642,7 +332,7 @@ class Web3ScraperService {
       const $ = cheerio.load(response.data);
 
       console.log("$", $);
-      const posts: ScrapedWeb3Post[] = [];
+      const posts: ScrapedPost[] = [];
 
       // Try multiple selectors for Medium articles
       let articles = $("article[data-testid='post-preview']");
@@ -779,7 +469,7 @@ class Web3ScraperService {
   private async fetchParagraphPostsFromLink(
     link: string,
     maxPosts: number = 10
-  ): Promise<ScrapedWeb3Post[]> {
+  ): Promise<ScrapedPost[]> {
     try {
       const response = await axios.get(link, {
         headers: {
@@ -789,7 +479,7 @@ class Web3ScraperService {
       });
 
       const $ = cheerio.load(response.data);
-      const posts: ScrapedWeb3Post[] = [];
+      const posts: ScrapedPost[] = [];
 
       $("article, .post, [data-testid='post']")
         .slice(0, maxPosts)
@@ -858,7 +548,7 @@ class Web3ScraperService {
   private async fetchMirrorPostsFromLink(
     link: string,
     maxPosts: number = 10
-  ): Promise<ScrapedWeb3Post[]> {
+  ): Promise<ScrapedPost[]> {
     try {
       const response = await axios.get(link, {
         headers: {
@@ -868,7 +558,7 @@ class Web3ScraperService {
       });
 
       const $ = cheerio.load(response.data);
-      const posts: ScrapedWeb3Post[] = [];
+      const posts: ScrapedPost[] = [];
 
       $('[data-testid="post-card"], .post-card, article')
         .slice(0, maxPosts)
