@@ -8,6 +8,8 @@ import config from "./config/env";
 import { connectDB } from "./config/database";
 import { swaggerSpec, swaggerUi } from "./config/swagger";
 import companyRoutes from "./routes/companyRoutes";
+import userRoutes from "./routes/userRoutes";
+import graphProtocolRoutes from "./routes/graphProtocolRoutes";
 import cronService from "./services/cronService";
 import { errorHandler } from "./middleware/errorHandler";
 import { notFound } from "./middleware/notFound";
@@ -41,6 +43,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use("/api/companies", companyRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/graph", graphProtocolRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -78,6 +82,8 @@ const startServer = async () => {
       console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
       console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
       console.log(`🏢 Company API: http://localhost:${PORT}/api/companies`);
+      console.log(`👥 User API: http://localhost:${PORT}/api/users`);
+      console.log(`📊 Graph Protocol API: http://localhost:${PORT}/api/graph`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);
