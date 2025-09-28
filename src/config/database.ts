@@ -1,6 +1,6 @@
 /**
  * Database Configuration Module
- * 
+ *
  * This module handles MongoDB database connection using Mongoose ODM.
  * It provides connection management, error handling, and graceful shutdown functionality.
  */
@@ -13,12 +13,12 @@ const MONGODB_URI = config.MONGODB_URI;
 
 /**
  * Establishes connection to MongoDB database
- * 
+ *
  * This function handles:
  * - Initial database connection
  * - Connection event listeners for error handling
  * - Graceful shutdown on application termination
- * 
+ *
  * @returns Promise<void> - Resolves when connection is established
  * @throws Error if connection fails
  */

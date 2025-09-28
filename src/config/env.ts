@@ -1,6 +1,6 @@
 /**
  * Environment Configuration Module
- * 
+ *
  * This module handles environment variable configuration and validation.
  * It provides type-safe access to environment variables with default values
  * and validates critical configuration on application startup.
@@ -13,7 +13,7 @@ dotenv.config();
 
 /**
  * Environment Configuration Interface
- * 
+ *
  * Defines the structure of environment variables used throughout the application.
  * Each property corresponds to an environment variable with appropriate typing.
  */
@@ -42,7 +42,7 @@ export interface EnvironmentConfig {
 
 /**
  * Environment Configuration Object
- * 
+ *
  * Creates a configuration object with environment variables and their default values.
  * All environment variables are parsed with appropriate type conversions.
  */
@@ -72,12 +72,12 @@ const config: EnvironmentConfig = {
 
 /**
  * Validates the configuration object
- * 
+ *
  * Performs validation checks on critical configuration values:
  * - Checks for required environment variables
  * - Validates MongoDB URI format
  * - Ensures JWT secret is set in production
- * 
+ *
  * @throws Error if validation fails
  */
 export const validateConfig = (): void => {

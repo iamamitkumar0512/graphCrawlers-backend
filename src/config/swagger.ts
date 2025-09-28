@@ -1,9 +1,24 @@
+/**
+ * Swagger Configuration Module
+ * 
+ * This module configures Swagger/OpenAPI documentation for the API.
+ * It defines API schemas, endpoints, and provides interactive documentation.
+ */
+
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 
+/**
+ * Swagger Configuration Options
+ * 
+ * Defines the OpenAPI specification for the API documentation.
+ * Includes API metadata, server configuration, and schema definitions.
+ */
 const options: swaggerJsdoc.Options = {
   definition: {
+    // OpenAPI version
     openapi: "3.0.0",
+    // API metadata
     info: {
       title: "Hackthon Backend API",
       version: "1.0.0",
@@ -14,14 +29,18 @@ const options: swaggerJsdoc.Options = {
         email: "support@hackthon.com",
       },
     },
+    // Server configuration
     servers: [
       {
         url: `http://localhost:${process.env.PORT || 3000}`,
         description: "Development server",
       },
     ],
+    // API components including schemas and responses
     components: {
+      // Data schemas used throughout the API
       schemas: {
+        // Tweet data structure schema
         Tweet: {
           type: "object",
           required: ["tweetId", "text", "author", "createdAt"],
