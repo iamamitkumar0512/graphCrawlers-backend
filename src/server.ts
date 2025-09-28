@@ -8,7 +8,6 @@ import config from "./config/env";
 import { connectDB } from "./config/database";
 import { swaggerSpec, swaggerUi } from "./config/swagger";
 import companyRoutes from "./routes/companyRoutes";
-import userRoutes from "./routes/userRoutes";
 import graphProtocolRoutes from "./routes/graphProtocolRoutes";
 import cronService from "./services/cronService";
 import { errorHandler } from "./middleware/errorHandler";
@@ -43,7 +42,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use("/api/companies", companyRoutes);
-app.use("/api/users", userRoutes);
 app.use("/api/graph", graphProtocolRoutes);
 
 // Health check endpoint

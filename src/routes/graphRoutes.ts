@@ -71,13 +71,6 @@ router.get("/", (req: Request, res: Response) => {
     version: process.env.API_VERSION || "v1",
     timestamp: new Date().toISOString(),
     availableRoutes: [
-      // General user routes
-      "GET /api/users",
-      "POST /api/users",
-      "GET /api/users/:id",
-      "PUT /api/users/:id",
-      "DELETE /api/users/:id",
-      // Graph Protocol routes
       "POST /api/graph/space - Create a space",
       "GET /api/graph/space/:spaceId - Get space by ID",
       "GET /api/graph/spaces - Get my spaces",
@@ -95,17 +88,6 @@ router.get("/", (req: Request, res: Response) => {
       "POST /api/graph/transaction - Execute transaction",
       "POST /api/graph/full-flow - Demo complete flow",
       "GET /api/graph/generate-id - Generate a new ID",
-      // New subgraph endpoints
-      "POST /api/graph/subgraph - Create a subgraph",
-      "GET /api/graph/subgraphs/:ownerAddress - Get subgraphs by owner",
-      "GET /api/graph/subgraph/:subgraphId - Get specific subgraph",
-      "PUT /api/graph/subgraph/:subgraphId - Update subgraph",
-      "DELETE /api/graph/subgraph/:subgraphId - Delete subgraph",
-      "POST /api/graph/subgraph/:subgraphId/deploy - Deploy subgraph",
-      "GET /api/graph/subgraph/:subgraphId/status - Get subgraph status",
-      "POST /api/graph/subgraph/:subgraphId/query - Query subgraph with GraphQL",
-      "GET /api/graph/subgraph/:subgraphId/schema - Get subgraph schema",
-      "POST /api/graph/fill-data - Fill data with sample project",
     ],
   });
 });

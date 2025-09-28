@@ -1,8 +1,22 @@
+/**
+ * Environment Configuration Module
+ * 
+ * This module handles environment variable configuration and validation.
+ * It provides type-safe access to environment variables with default values
+ * and validates critical configuration on application startup.
+ */
+
 import dotenv from "dotenv";
 
 // Load environment variables from .env file
 dotenv.config();
 
+/**
+ * Environment Configuration Interface
+ * 
+ * Defines the structure of environment variables used throughout the application.
+ * Each property corresponds to an environment variable with appropriate typing.
+ */
 export interface EnvironmentConfig {
   // Server Configuration
   PORT: number;
@@ -26,6 +40,12 @@ export interface EnvironmentConfig {
   CRON_SCHEDULE: string;
 }
 
+/**
+ * Environment Configuration Object
+ * 
+ * Creates a configuration object with environment variables and their default values.
+ * All environment variables are parsed with appropriate type conversions.
+ */
 const config: EnvironmentConfig = {
   // Server Configuration
   PORT: parseInt(process.env.PORT || "3000", 10),
@@ -50,10 +70,20 @@ const config: EnvironmentConfig = {
   CRON_SCHEDULE: process.env.CRON_SCHEDULE || "0 */6 * * *", // Every 6 hours
 };
 
-// Validation function
+/**
+ * Validates the configuration object
+ * 
+ * Performs validation checks on critical configuration values:
+ * - Checks for required environment variables
+ * - Validates MongoDB URI format
+ * - Ensures JWT secret is set in production
+ * 
+ * @throws Error if validation fails
+ */
 export const validateConfig = (): void => {
   const requiredVars = ["MONGODB_URI"];
 
+  // Check for required environment variables
   for (const varName of requiredVars) {
     if (!process.env[varName]) {
       console.warn(`⚠️  Warning: ${varName} is not set, using default value`);
@@ -68,7 +98,7 @@ export const validateConfig = (): void => {
     throw new Error("Invalid MongoDB URI format");
   }
 
-  // Validate JWT secret in production
+  // Validate JWT secret in production environment
   if (
     config.NODE_ENV === "production" &&
     config.JWT_SECRET === "your_jwt_secret_here"
@@ -77,7 +107,8 @@ export const validateConfig = (): void => {
   }
 };
 
-// Validate configuration on import
+// Validate configuration on module import
 validateConfig();
 
+// Export the validated configuration object
 export default config;
