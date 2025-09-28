@@ -1,6 +1,6 @@
 /**
  * Swagger Configuration Module
- * 
+ *
  * This module configures Swagger/OpenAPI documentation for the API.
  * It defines API schemas, endpoints, and provides interactive documentation.
  */
@@ -10,7 +10,7 @@ import swaggerUi from "swagger-ui-express";
 
 /**
  * Swagger Configuration Options
- * 
+ *
  * Defines the OpenAPI specification for the API documentation.
  * Includes API metadata, server configuration, and schema definitions.
  */
@@ -146,7 +146,7 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-        // Graph Protocol Schemas
+        // Graph Protocol API Schemas for blockchain integration
         SpaceCreate: {
           type: "object",
           required: ["editorAddress", "name"],
