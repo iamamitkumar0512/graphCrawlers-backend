@@ -356,6 +356,7 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        // User management schema
         User: {
           type: "object",
           required: ["name", "email"],
@@ -388,6 +389,7 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        // Error response schema
         Error: {
           type: "object",
           properties: {
@@ -402,7 +404,9 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+      // Common API responses
       responses: {
+        // 404 Not Found response
         NotFound: {
           description: "Resource not found",
           content: {
@@ -413,6 +417,7 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        // 500 Internal Server Error response
         ServerError: {
           description: "Internal server error",
           content: {
@@ -426,13 +431,17 @@ const options: swaggerJsdoc.Options = {
       },
     },
   },
+  // Paths to files containing OpenAPI/Swagger documentation comments
   apis: [
     "./src/routes/*.ts",
     "./src/controllers/*.ts",
     "./src/routes/userRoutes.ts",
     "./src/routes/graphProtocolRoutes.ts",
-  ], // paths to files containing OpenAPI definitions
+  ],
 };
 
+// Generate Swagger specification from options
 export const swaggerSpec = swaggerJsdoc(options);
+
+// Export Swagger UI for serving documentation
 export { swaggerUi };
