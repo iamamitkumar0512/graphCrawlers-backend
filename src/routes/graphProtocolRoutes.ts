@@ -1,10 +1,23 @@
+/**
+ * Graph Protocol Routes Module
+ *
+ * This module defines all HTTP routes related to Graph Protocol integration.
+ * It provides endpoints for managing spaces, entities, types, properties,
+ * and publishing data to IPFS and blockchain networks.
+ */
+
 import { Router, Request, Response } from "express";
 import { GraphProtocolService } from "../services/graphProtocol";
 
+// Create Express router instance
 const router = Router();
+
+// Initialize Graph Protocol service
 const graphService = new GraphProtocolService();
 
 /**
+ * Swagger API Documentation Tags for Graph Protocol
+ *
  * @swagger
  * tags:
  *   - name: GraphProtocol - Spaces
@@ -71,10 +84,16 @@ const graphService = new GraphProtocolService();
  *       500:
  *         $ref: '#/components/responses/ErrorResponse'
  */
+/**
+ * POST /api/graph/space
+ * Create a new Graph Protocol space
+ */
 router.post("/space", async (req: Request, res: Response) => {
   try {
+    // Extract required parameters from request body
     const { editorAddress, name, network = "TESTNET" } = req.body;
 
+    // Validate required fields
     if (!editorAddress || !name) {
       return res.status(400).json({
         success: false,
@@ -82,6 +101,7 @@ router.post("/space", async (req: Request, res: Response) => {
       });
     }
 
+    // Create space using Graph Protocol service
     const space = await graphService.createSpace(editorAddress, name, network);
 
     return res.status(201).json({

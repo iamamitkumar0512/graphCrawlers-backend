@@ -1,22 +1,46 @@
+/**
+ * Cron Service Module
+ *
+ * This service manages scheduled tasks for the application including
+ * automated content scraping and cleanup operations. It provides
+ * centralized scheduling functionality using node-cron.
+ */
+
 import * as cron from "node-cron";
 import web3ScraperService from "./web3ScraperService";
 import { logger } from "../utils/logger";
 
+/**
+ * Cron Service Class
+ *
+ * Manages scheduled background tasks including:
+ * - Web3 content scraping from various platforms
+ * - System cleanup operations
+ * - Job lifecycle management
+ */
 class CronService {
+  // Map to store active cron jobs
   private jobs: Map<string, cron.ScheduledTask> = new Map();
+  // Flag to track initialization state
   private isInitialized = false;
 
+  /**
+   * Initialize the cron service and schedule all background tasks
+   *
+   * This method sets up the Web3 scraper service and schedules
+   * recurring tasks for content fetching and system cleanup.
+   */
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
     try {
-      // Initialize Web3 scraper service
+      // Initialize Web3 scraper service first
       await web3ScraperService.initialize();
 
-      // Schedule web3 content fetching every hour
+      // Schedule web3 content fetching task
       this.scheduleWeb3ContentFetching();
 
-      // Schedule cleanup job every 24 hours
+      // Schedule system cleanup task
       this.scheduleCleanup();
 
       this.isInitialized = true;
@@ -27,14 +51,21 @@ class CronService {
     }
   }
 
+  /**
+   * Schedule automated Web3 content fetching task
+   *
+   * This method sets up a recurring job to automatically scrape
+   * content from Web3 platforms for all active companies.
+   */
   private scheduleWeb3ContentFetching(): void {
-    // Run every hour: '0 * * * *'
-    // For testing, run every 10 minutes: '*/10 * * * *'
+    // Schedule pattern: every 10 minutes for testing
+    // Production: '0 * * * *' (every hour)
     const web3ContentFetchingJob = cron.schedule(
       "*/10 * * * *",
       async () => {
         try {
           logger.info("Starting scheduled web3 content fetching...");
+          // Fetch content from all active companies with limit of 3 posts per company
           const savedParagraphs =
             await web3ScraperService.fetchAndSaveAllParagraphs(3);
           logger.info(
@@ -45,10 +76,11 @@ class CronService {
         }
       },
       {
-        timezone: "UTC",
+        timezone: "UTC", // Run in UTC timezone
       }
     );
 
+    // Store job reference and start it
     this.jobs.set("web3ContentFetching", web3ContentFetchingJob);
     web3ContentFetchingJob.start();
     logger.info("Web3 content fetching job scheduled to run every 10 minutes");
