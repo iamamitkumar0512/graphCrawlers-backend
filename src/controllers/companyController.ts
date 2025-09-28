@@ -1,3 +1,11 @@
+/**
+ * Company Controller
+ *
+ * This controller handles all HTTP requests related to company management and
+ * content scraping operations. It provides CRUD operations for companies and
+ * manages the relationship between companies and their scraped content.
+ */
+
 import { Request, Response } from "express";
 import Company, { ICompany } from "../models/Company";
 import Paragraph, { IParagraph } from "../models/Paragraph";
@@ -108,8 +116,16 @@ import { logger } from "../utils/logger";
  *           format: date-time
  */
 
+/**
+ * Company Controller Class
+ *
+ * Contains all methods for handling company-related HTTP requests including
+ * CRUD operations, content scraping, and paragraph management.
+ */
 class CompanyController {
   /**
+   * Get all companies with pagination and filtering
+   *
    * @swagger
    * /api/companies:
    *   get:
@@ -166,28 +182,31 @@ class CompanyController {
    */
   async getAllCompanies(req: Request, res: Response): Promise<void> {
     try {
+      // Parse query parameters with defaults
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       const active = req.query.active as string;
 
-      // Build filter object
+      // Build filter object based on query parameters
       const filter: any = {};
       if (active !== undefined) {
         filter.isActive = active === "true";
       }
 
+      // Calculate skip value for pagination
       const skip = (page - 1) * limit;
 
-      // Get companies and total count
+      // Fetch companies and total count in parallel for better performance
       const [companies, totalCompanies] = await Promise.all([
         Company.find(filter)
-          .sort({ createdAt: -1 })
+          .sort({ createdAt: -1 }) // Sort by newest first
           .skip(skip)
           .limit(limit)
-          .lean(),
+          .lean(), // Use lean() for better performance
         Company.countDocuments(filter),
       ]);
 
+      // Calculate pagination metadata
       const totalPages = Math.ceil(totalCompanies / limit);
 
       res.status(200).json({
@@ -214,6 +233,8 @@ class CompanyController {
   }
 
   /**
+   * Get a specific company by ID
+   *
    * @swagger
    * /api/companies/{id}:
    *   get:
@@ -243,10 +264,13 @@ class CompanyController {
    */
   async getCompanyById(req: Request, res: Response): Promise<void> {
     try {
+      // Extract company ID from URL parameters
       const { id } = req.params;
 
+      // Find company by ID
       const company = await Company.findById(id).lean();
 
+      // Return 404 if company not found
       if (!company) {
         res.status(404).json({
           success: false,
@@ -255,6 +279,7 @@ class CompanyController {
         return;
       }
 
+      // Return company data
       res.status(200).json({
         success: true,
         data: company,
@@ -270,6 +295,8 @@ class CompanyController {
   }
 
   /**
+   * Create a new company
+   *
    * @swagger
    * /api/companies:
    *   post:
@@ -312,6 +339,7 @@ class CompanyController {
    */
   async createCompany(req: Request, res: Response): Promise<void> {
     try {
+      // Extract company data from request body
       const {
         companyName,
         publicSpaceId,
@@ -321,7 +349,7 @@ class CompanyController {
         isActive = true,
       } = req.body;
 
-      // Check if company already exists
+      // Check if company with the same name already exists
       const existingCompany = await Company.findOne({ companyName });
       if (existingCompany) {
         res.status(409).json({
@@ -331,6 +359,7 @@ class CompanyController {
         return;
       }
 
+      // Create new company instance
       const company = new Company({
         companyName,
         publicSpaceId,
@@ -340,6 +369,7 @@ class CompanyController {
         isActive,
       });
 
+      // Save company to database
       const savedCompany = await company.save();
 
       res.status(201).json({
@@ -349,6 +379,7 @@ class CompanyController {
       });
     } catch (error) {
       logger.error("Error creating company:", error);
+      // Handle validation errors specifically
       if (error instanceof Error && error.message.includes("validation")) {
         res.status(400).json({
           success: false,
@@ -731,6 +762,12 @@ class CompanyController {
   }
 
   /**
+   * Scrape content for a specific company from a specified platform
+   *
+   * This method triggers content scraping for a company from platforms like
+   * Medium, Paragraph, or Mirror. It validates the company exists and calls
+   * the web3ScraperService to perform the actual scraping.
+   *
    * @swagger
    * /api/companies/{companyName}/scrape:
    *   post:
@@ -770,9 +807,11 @@ class CompanyController {
    */
   async scrapeCompanyContent(req: Request, res: Response): Promise<void> {
     try {
+      // Extract parameters from request
       const { companyName } = req.params;
       const { platform, maxPosts = 10 } = req.body;
 
+      // Validate platform parameter
       if (!platform || !["medium", "paragraph", "mirror"].includes(platform)) {
         res.status(400).json({
           success: false,
@@ -781,7 +820,7 @@ class CompanyController {
         return;
       }
 
-      // Check if company exists
+      // Verify company exists and is active
       const company = await Company.findOne({
         companyName,
         isActive: true,
@@ -795,7 +834,7 @@ class CompanyController {
         return;
       }
 
-      // Scrape content
+      // Trigger content scraping using web3ScraperService
       const scrapedParagraphs =
         await web3ScraperService.scrapeCompanyByPlatform(
           companyName,
@@ -803,6 +842,7 @@ class CompanyController {
           maxPosts
         );
 
+      // Return scraping results
       res.status(200).json({
         success: true,
         message: `Successfully scraped ${scrapedParagraphs.length} ${platform} posts for ${companyName}`,

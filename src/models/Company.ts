@@ -1,6 +1,6 @@
 /**
  * Company Model
- * 
+ *
  * This model represents companies that are being monitored for content across
  * various platforms (Medium, Paragraph, Mirror). It stores company information
  * and their associated platform links for content scraping.
@@ -10,7 +10,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 /**
  * Company Interface
- * 
+ *
  * Defines the structure of a company document in the database.
  * Extends MongoDB Document interface for additional functionality.
  */
@@ -35,7 +35,7 @@ export interface ICompany extends Document {
 
 /**
  * Company Schema Definition
- * 
+ *
  * Defines the MongoDB schema for Company documents with validation rules,
  * field constraints, and data types for each property.
  */
@@ -101,9 +101,13 @@ const CompanySchema: Schema = new Schema(
   }
 );
 
-// Create indexes for better query performance
+// Create database indexes for optimized query performance
+// Index on company name for fast lookups
 CompanySchema.index({ companyName: 1 });
+// Index on active status for filtering active companies
 CompanySchema.index({ isActive: 1 });
+// Index on creation date for chronological queries
 CompanySchema.index({ createdAt: -1 });
 
+// Export the Company model for use in other modules
 export default mongoose.model<ICompany>("Company", CompanySchema);
